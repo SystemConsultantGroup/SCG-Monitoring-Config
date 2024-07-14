@@ -217,13 +217,15 @@ alertmanager:
     ##
     storage:   ## pv 추가
       volumeClaimTemplate:
+        metadata:
+          name: alertmanager-pvc  
         spec:
           storageClassName: longhorn
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 10Gi
-          selector: {}
+              storage: 20Gi
+          
 
 
     ## The external URL the Alertmanager instances will be available under. This is necessary to generate correct URLs. This is necessary if Alertmanager is not served from root of a DNS name. string  false
