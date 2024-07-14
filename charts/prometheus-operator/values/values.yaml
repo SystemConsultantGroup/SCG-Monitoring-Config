@@ -412,58 +412,43 @@ alertmanager:
 #################################################################################################
 grafana:
   enabled: true
-
   adminPassword: admin
+  
   ingress:
     ## If true, Grafana Ingress will be created
     ##
     enabled: true
-
-    ## IngressClassName for Grafana Ingress.
-    ## Should be provided if Ingress is enable.
-    ##
     ingressClassName: nginx
 
     ## Annotations for Grafana Ingress
     ##
-    annotations: {}
-      # kubernetes.io/ingress.class: nginx
-      # kubernetes.io/tls-acme: "true"
-
+    annotations: 
+      kubernetes.io/ingress.class: nginx
+      kubernetes.io/tls-acme: "true"
+      cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+      
     ## Labels to be added to the Ingress
     ##
     labels: {}
-
-    ## Hostnames.
-    ## Must be provided if Ingress is enable.
-    ##
-    # hosts:
-    #   - grafana.domain.com
     hosts: 
       - grafana.k8s.scg.skku.ac.kr
-
-    ## Path for grafana ingress
     path: /
-
-    ## TLS configuration for grafana Ingress
     ## Secret must be manually created in the namespace
-    ##
     tls: 
     - secretName: grafana-general-tls
       hosts:
       - grafana.k8s.scg.skku.ac.kr
-
   # # To make Grafana persistent (Using Statefulset)
   # #
-  # persistence:
-  #   enabled: true
-  #   type: sts
-  #   storageClassName: "storageClassName"
-  #   accessModes:
-  #     - ReadWriteOnce
-  #   size: 20Gi
-  #   finalizers:
-  #     - kubernetes.io/pvc-protection
+  persistence:
+    enabled: true
+    type: sts  ##statefulSet
+    storageClassName: longhorn
+    accessModes:
+      - ReadWriteOnce
+    size: 30Gi
+    finalizers:
+      - kubernetes.io/pvc-protection
 
   sidecar:
     dashboards:
@@ -496,7 +481,7 @@ grafana:
 
       ## URL of prometheus datasource
       ##
-      # url: http://prometheus-stack-prometheus:9090/
+      url: http://prometheus-stack-prometheus:9090/
 
       ## Prometheus request timeout in seconds
       # timeout: 30
@@ -537,27 +522,6 @@ grafana:
   #   configMap: certs-configmap
   #   readOnly: true
 
-  deleteDatasources: []
-  # - name: example-datasource
-  #   orgId: 1
-
-  ## Configure additional grafana datasources (passed through tpl)
-  ## ref: http://docs.grafana.org/administration/provisioning/#datasources
-  additionalDataSources: []
-  # - name: prometheus-sample
-  #   access: proxy
-  #   basicAuth: true
-  #   basicAuthPassword: pass
-  #   basicAuthUser: daco
-  #   editable: false
-  #   jsonData:
-  #       tlsSkipVerify: true
-  #   orgId: 1
-  #   type: prometheus
-  #   url: https://{{ printf "%s-prometheus.svc" .Release.Name }}:9090
-  #   version: 1
-
-  ## Passed to grafana subchart and used by servicemonitor below
   ##
   service:
     portName: http-web
@@ -605,7 +569,7 @@ kubernetesServiceMonitors:
 ## Component scraping the kube api server
 ##
 kubeApiServer:
-  enabled: true
+  enabled: false
   tlsConfig:
     serverName: kubernetes
     insecureSkipVerify: false
@@ -885,7 +849,7 @@ kubelet:
 ## Component scraping the kube controller manager
 ##
 kubeControllerManager:
-  enabled: true
+  enabled: false
 
   ## If your kube controller manager is not deployed as a pod, specify IPs it can be found on
   ##
@@ -988,7 +952,7 @@ kubeControllerManager:
 ## Component scraping coreDns. Use either this or kubeDns
 ##
 coreDns:
-  enabled: true
+  enabled: false
   service:
     enabled: true
     port: 9153
@@ -1160,7 +1124,7 @@ kubeDns:
 ## Component scraping etcd
 ##
 kubeEtcd:
-  enabled: true
+  enabled: false
 
   ## If your etcd is not deployed as a pod, specify IPs it can be found on
   ##
@@ -1265,7 +1229,7 @@ kubeEtcd:
 ## Component scraping kube scheduler
 ##
 kubeScheduler:
-  enabled: true
+  enabled: false
 
   ## If your kube scheduler is not deployed as a pod, specify IPs it can be found on
   ##
@@ -1367,7 +1331,7 @@ kubeScheduler:
 ## Component scraping kube proxy
 ##
 kubeProxy:
-  enabled: true
+  enabled: false
 
   ## If your kube proxy is not deployed as a pod, specify IPs it can be found on
   ##
@@ -2646,45 +2610,32 @@ prometheus:
   #     someoneelse:$apr1$DMZX2Z4q$6SbQIfyuLQd.xmo/P0m2c.
 
   ingress:
-    enabled: false
-
-    # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
-    # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
-    # ingressClassName: nginx
+    enabled: true
 
     annotations: {}
     labels: {}
 
     ## Redirect ingress to an additional defined port on the service
     # servicePort: 8081
-
-    ## Hostnames.
-    ## Must be provided if Ingress is enabled.
-    ##
-    # hosts:
-    #   - prometheus.domain.com
-    hosts: []
+    hosts: 
+      - prometheus.k8s.scg.skku.ac.kr
 
     ## Paths to use for ingress rules - one path should match the prometheusSpec.routePrefix
-    ##
-    paths: []
-    # - /
+    paths: 
+      - /
 
     ## For Kubernetes >= 1.18 you should specify the pathType (determines how Ingress paths should be matched)
     ## See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#better-path-matching-with-path-types
-    # pathType: ImplementationSpecific
+    pathType: prefix
 
     ## TLS configuration for Prometheus Ingress
     ## Secret must be manually created in the namespace
     ##
-    tls: []
-      # - secretName: prometheus-general-tls
-      #   hosts:
-      #     - prometheus.example.com
+    tls: 
+      - secretName: prometheus-tls-secret
+        hosts:
+          - prometheus.k8s.scg.skku.ac.kr
 
-  ## Configuration for creating an Ingress that will map to each Prometheus replica service
-  ## prometheus.servicePerReplica must be enabled
-  ##
   ingressPerReplica:
     enabled: false
 
@@ -2988,7 +2939,7 @@ prometheus:
     ## prometheus resource to be created with selectors based on values in the helm deployment,
     ## which will also match the PrometheusRule resources created
     ##
-    ruleSelectorNilUsesHelmValues: true
+    ruleSelectorNilUsesHelmValues: false
 
     ## PrometheusRules to be selected for target discovery.
     ## If {}, select all PrometheusRules
@@ -3013,7 +2964,7 @@ prometheus:
     ## prometheus resource to be created with selectors based on values in the helm deployment,
     ## which will also match the servicemonitors created
     ##
-    serviceMonitorSelectorNilUsesHelmValues: true
+    serviceMonitorSelectorNilUsesHelmValues: false
 
     ## ServiceMonitors to be selected for target discovery.
     ## If {}, select all ServiceMonitors
@@ -3036,7 +2987,7 @@ prometheus:
     ## prometheus resource to be created with selectors based on values in the helm deployment,
     ## which will also match the podmonitors created
     ##
-    podMonitorSelectorNilUsesHelmValues: true
+    podMonitorSelectorNilUsesHelmValues: false
 
     ## PodMonitors to be selected for target discovery.
     ## If {}, select all PodMonitors
@@ -3058,7 +3009,7 @@ prometheus:
     ## prometheus resource to be created with selectors based on values in the helm deployment,
     ## which will also match the probes created
     ##
-    probeSelectorNilUsesHelmValues: true
+    probeSelectorNilUsesHelmValues: false
 
     ## Probes to be selected for target discovery.
     ## If {}, select all Probes
@@ -3240,49 +3191,17 @@ prometheus:
     ## The scrape configuration example below will find master nodes, provided they have the name .*mst.*, relabel the
     ## port to 2379 and allow etcd scraping provided it is running on all Kubernetes master nodes
     ##
-    additionalScrapeConfigs: []
-    # - job_name: kube-etcd
-    #   kubernetes_sd_configs:
-    #     - role: node
-    #   scheme: https
-    #   tls_config:
-    #     ca_file:   /etc/prometheus/secrets/etcd-client-cert/etcd-ca
-    #     cert_file: /etc/prometheus/secrets/etcd-client-cert/etcd-client
-    #     key_file:  /etc/prometheus/secrets/etcd-client-cert/etcd-client-key
-    #   relabel_configs:
-    #   - action: labelmap
-    #     regex: __meta_kubernetes_node_label_(.+)
-    #   - source_labels: [__address__]
-    #     action: replace
-    #     targetLabel: __address__
-    #     regex: ([^:;]+):(\d+)
-    #     replacement: ${1}:2379
-    #   - source_labels: [__meta_kubernetes_node_name]
-    #     action: keep
-    #     regex: .*mst.*
-    #   - source_labels: [__meta_kubernetes_node_name]
-    #     action: replace
-    #     targetLabel: node
-    #     regex: (.*)
-    #     replacement: ${1}
-    #   metric_relabel_configs:
-    #   - regex: (kubernetes_io_hostname|failure_domain_beta_kubernetes_io_region|beta_kubernetes_io_os|beta_kubernetes_io_arch|beta_kubernetes_io_instance_type|failure_domain_beta_kubernetes_io_zone)
-    #     action: labeldrop
-    #
-    ## If scrape config contains a repetitive section, you may want to use a template.
-    ## In the following example, you can see how to define `gce_sd_configs` for multiple zones
-    # additionalScrapeConfigs: |
-    #  - job_name: "node-exporter"
-    #    gce_sd_configs:
-    #    {{range $zone := .Values.gcp_zones}}
-    #    - project: "project1"
-    #      zone: "{{$zone}}"
-    #      port: 9100
-    #    {{end}}
-    #    relabel_configs:
-    #    ...
-
-
+    additionalScrapeConfigs: 
+    - job_name: 'mysql-exporter'
+      scheme: http
+      metrics_path: /metrics
+      static-configs:
+        - targets: ["115.145.172.221:9104"]
+    - job_name: 'scg-apply-exporter'
+      scheme: https
+      metrics_path: /v1/metrics
+      static-configs:
+        - targets: ["apply.scg.skku.ac.kr"]
     ## If additional scrape configurations are already deployed in a single secret file you can use this section.
     ## Expected values are the secret name and key
     ## Cannot be used with additionalScrapeConfigs
@@ -3512,7 +3431,7 @@ prometheus:
     #      - a1.app.local
     #      - b1.app.local
 
-    ## TracingConfig configures tracing in Prometheus.
+    ## TracingConfig configures tracing  in Prometheus.
     ## See https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#prometheustracingconfig
     tracingConfig: {}
 
@@ -3687,491 +3606,3 @@ prometheus:
     ## https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#podmetricsendpoint
     ##
     # podMetricsEndpoints: []
-
-## Configuration for thanosRuler
-## ref: https://thanos.io/tip/components/rule.md/
-##
-thanosRuler:
-
-  ## Deploy thanosRuler
-  ##
-  enabled: false
-
-  ## Annotations for ThanosRuler
-  ##
-  annotations: {}
-
-  ## Service account for ThanosRuler to use.
-  ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/
-  ##
-  serviceAccount:
-    create: true
-    name: ""
-    annotations: {}
-
-  ## Configure pod disruption budgets for ThanosRuler
-  ## ref: https://kubernetes.io/docs/tasks/run-application/configure-pdb/#specifying-a-poddisruptionbudget
-  ##
-  podDisruptionBudget:
-    enabled: false
-    minAvailable: 1
-    maxUnavailable: ""
-
-  ingress:
-    enabled: false
-
-    # For Kubernetes >= 1.18 you should specify the ingress-controller via the field ingressClassName
-    # See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#specifying-the-class-of-an-ingress
-    # ingressClassName: nginx
-
-    annotations: {}
-
-    labels: {}
-
-    ## Hosts must be provided if Ingress is enabled.
-    ##
-    hosts: []
-      # - thanosruler.domain.com
-
-    ## Paths to use for ingress rules - one path should match the thanosruler.routePrefix
-    ##
-    paths: []
-    # - /
-
-    ## For Kubernetes >= 1.18 you should specify the pathType (determines how Ingress paths should be matched)
-    ## See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#better-path-matching-with-path-types
-    # pathType: ImplementationSpecific
-
-    ## TLS configuration for ThanosRuler Ingress
-    ## Secret must be manually created in the namespace
-    ##
-    tls: []
-    # - secretName: thanosruler-general-tls
-    #   hosts:
-    #   - thanosruler.example.com
-
-  ## Configuration for ThanosRuler service
-  ##
-  service:
-    annotations: {}
-    labels: {}
-    clusterIP: ""
-    ipDualStack:
-      enabled: false
-      ipFamilies: ["IPv6", "IPv4"]
-      ipFamilyPolicy: "PreferDualStack"
-
-    ## Port for ThanosRuler Service to listen on
-    ##
-    port: 10902
-    ## To be used with a proxy extraContainer port
-    ##
-    targetPort: 10902
-    ## Port to expose on each node
-    ## Only used if service.type is 'NodePort'
-    ##
-    nodePort: 30905
-    ## List of IP addresses at which the Prometheus server service is available
-    ## Ref: https://kubernetes.io/docs/user-guide/services/#external-ips
-    ##
-
-    ## Additional ports to open for ThanosRuler service
-    additionalPorts: []
-
-    externalIPs: []
-    loadBalancerIP: ""
-    loadBalancerSourceRanges: []
-
-    ## Denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
-    ##
-    externalTrafficPolicy: Cluster
-
-    ## Service type
-    ##
-    type: ClusterIP
-
-  ## Configuration for creating a ServiceMonitor for the ThanosRuler service
-  ##
-  serviceMonitor:
-    ## If true, create a serviceMonitor for thanosRuler
-    ##
-    selfMonitor: true
-
-    ## Scrape interval. If not set, the Prometheus default scrape interval is used.
-    ##
-    interval: ""
-
-    ## Additional labels
-    ##
-    additionalLabels: {}
-
-    ## SampleLimit defines per-scrape limit on number of scraped samples that will be accepted.
-    ##
-    sampleLimit: 0
-
-    ## TargetLimit defines a limit on the number of scraped targets that will be accepted.
-    ##
-    targetLimit: 0
-
-    ## Per-scrape limit on number of labels that will be accepted for a sample. Only valid in Prometheus versions 2.27.0 and newer.
-    ##
-    labelLimit: 0
-
-    ## Per-scrape limit on length of labels name that will be accepted for a sample. Only valid in Prometheus versions 2.27.0 and newer.
-    ##
-    labelNameLengthLimit: 0
-
-    ## Per-scrape limit on length of labels value that will be accepted for a sample. Only valid in Prometheus versions 2.27.0 and newer.
-    ##
-    labelValueLengthLimit: 0
-
-    ## proxyUrl: URL of a proxy that should be used for scraping.
-    ##
-    proxyUrl: ""
-
-    ## scheme: HTTP scheme to use for scraping. Can be used with `tlsConfig` for example if using istio mTLS.
-    scheme: ""
-
-    ## tlsConfig: TLS configuration to use when scraping the endpoint. For example if using istio mTLS.
-    ## Of type: https://github.com/coreos/prometheus-operator/blob/main/Documentation/api.md#tlsconfig
-    tlsConfig: {}
-
-    bearerTokenFile:
-
-    ## MetricRelabelConfigs to apply to samples after scraping, but before ingestion.
-    ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#relabelconfig
-    ##
-    metricRelabelings: []
-    # - action: keep
-    #   regex: 'kube_(daemonset|deployment|pod|namespace|node|statefulset).+'
-    #   sourceLabels: [__name__]
-
-    ## RelabelConfigs to apply to samples before scraping
-    ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#relabelconfig
-    ##
-    relabelings: []
-    # - sourceLabels: [__meta_kubernetes_pod_node_name]
-    #   separator: ;
-    #   regex: ^(.*)$
-    #   targetLabel: nodename
-    #   replacement: $1
-    #   action: replace
-
-    ## Additional Endpoints
-    ##
-    additionalEndpoints: []
-    # - port: oauth-metrics
-    #   path: /metrics
-
-  ## Settings affecting thanosRulerpec
-  ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#thanosrulerspec
-  ##
-  thanosRulerSpec:
-    ## Standard object's metadata. More info: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
-    ## Metadata Labels and Annotations gets propagated to the ThanosRuler pods.
-    ##
-    podMetadata: {}
-
-    ## Image of ThanosRuler
-    ##
-    image:
-      registry: quay.io
-      repository: thanos/thanos
-      tag: v0.35.1
-      sha: ""
-
-    ## Namespaces to be selected for PrometheusRules discovery.
-    ## If nil, select own namespace. Namespaces to be selected for ServiceMonitor discovery.
-    ## See https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#namespaceselector for usage
-    ##
-    ruleNamespaceSelector: {}
-
-    ## If true, a nil or {} value for thanosRuler.thanosRulerSpec.ruleSelector will cause the
-    ## prometheus resource to be created with selectors based on values in the helm deployment,
-    ## which will also match the PrometheusRule resources created
-    ##
-    ruleSelectorNilUsesHelmValues: true
-
-    ## PrometheusRules to be selected for target discovery.
-    ## If {}, select all PrometheusRules
-    ##
-    ruleSelector: {}
-    ## Example which select all PrometheusRules resources
-    ## with label "prometheus" with values any of "example-rules" or "example-rules-2"
-    # ruleSelector:
-    #   matchExpressions:
-    #     - key: prometheus
-    #       operator: In
-    #       values:
-    #         - example-rules
-    #         - example-rules-2
-    #
-    ## Example which select all PrometheusRules resources with label "role" set to "example-rules"
-    # ruleSelector:
-    #   matchLabels:
-    #     role: example-rules
-
-    ## Define Log Format
-    # Use logfmt (default) or json logging
-    logFormat: logfmt
-
-    ## Log level for ThanosRuler to be configured with.
-    ##
-    logLevel: info
-
-    ## Size is the expected size of the thanosRuler cluster. The controller will eventually make the size of the
-    ## running cluster equal to the expected size.
-    replicas: 1
-
-    ## Time duration ThanosRuler shall retain data for. Default is '24h', and must match the regular expression
-    ## [0-9]+(ms|s|m|h) (milliseconds seconds minutes hours).
-    ##
-    retention: 24h
-
-    ## Interval between consecutive evaluations.
-    ##
-    evaluationInterval: ""
-
-    ## Storage is the definition of how storage will be used by the ThanosRuler instances.
-    ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/user-guides/storage.md
-    ##
-    storage: {}
-    # volumeClaimTemplate:
-    #   spec:
-    #     storageClassName: gluster
-    #     accessModes: ["ReadWriteOnce"]
-    #     resources:
-    #       requests:
-    #         storage: 50Gi
-    #   selector: {}
-
-    ## AlertmanagerConfig define configuration for connecting to alertmanager.
-    ## Only available with Thanos v0.10.0 and higher. Maps to the alertmanagers.config Thanos Ruler arg.
-    alertmanagersConfig:
-      # use existing secret, if configured, alertmanagersConfig.secret will not be used
-      existingSecret: {}
-        # name: ""
-        # key: ""
-      # will render render alertmanagersConfig secret data and configure it to be used by Thanos Ruler custom resource, ignored when alertmanagersConfig.existingSecret is set
-      # https://thanos.io/tip/components/rule.md/#alertmanager
-      secret: {}
-        # alertmanagers:
-        # - api_version: v2
-        #   http_config:
-        #     basic_auth:
-        #       username: some_user
-        #       password: some_pass
-        #   static_configs:
-        #     - alertmanager.thanos.io
-        #   scheme: http
-        #   timeout: 10s
-
-    ## DEPRECATED. Define URLs to send alerts to Alertmanager. For Thanos v0.10.0 and higher, alertmanagersConfig should be used instead.
-    ## Note: this field will be ignored if alertmanagersConfig is specified. Maps to the alertmanagers.url Thanos Ruler arg.
-    # alertmanagersUrl:
-
-    ## The external URL the Thanos Ruler instances will be available under. This is necessary to generate correct URLs. This is necessary if Thanos Ruler is not served from root of a DNS name. string false
-    ##
-    externalPrefix:
-
-    ## If true, http://{{ template "kube-prometheus-stack.thanosRuler.name" . }}.{{ template "kube-prometheus-stack.namespace" . }}:{{ .Values.thanosRuler.service.port }}
-    ## will be used as value for externalPrefix
-    externalPrefixNilUsesHelmValues: true
-
-    ## The route prefix ThanosRuler registers HTTP handlers for. This is useful, if using ExternalURL and a proxy is rewriting HTTP routes of a request, and the actual ExternalURL is still true,
-    ## but the server serves requests under a different route prefix. For example for use with kubectl proxy.
-    ##
-    routePrefix: /
-
-    ## ObjectStorageConfig configures object storage in Thanos
-    objectStorageConfig:
-      # use existing secret, if configured, objectStorageConfig.secret will not be used
-      existingSecret: {}
-        # name: ""
-        # key: ""
-      # will render objectStorageConfig secret data and configure it to be used by Thanos Ruler custom resource, ignored when objectStorageConfig.existingSecret is set
-      # https://thanos.io/tip/thanos/storage.md/#s3
-      secret: {}
-        # type: S3
-        # config:
-        #   bucket: ""
-        #   endpoint: ""
-        #   region: ""
-        #   access_key: ""
-        #   secret_key: ""
-
-    ## Labels by name to drop before sending to alertmanager
-    ## Maps to the --alert.label-drop flag of thanos ruler.
-    alertDropLabels: []
-
-    ## QueryEndpoints defines Thanos querier endpoints from which to query metrics.
-    ## Maps to the --query flag of thanos ruler.
-    queryEndpoints: []
-
-    ## Define configuration for connecting to thanos query instances. If this is defined, the queryEndpoints field will be ignored.
-    ## Maps to the query.config CLI argument. Only available with thanos v0.11.0 and higher.
-    queryConfig:
-      # use existing secret, if configured, queryConfig.secret will not be used
-      existingSecret: {}
-        # name: ""
-        # key: ""
-      # render queryConfig secret data and configure it to be used by Thanos Ruler custom resource, ignored when queryConfig.existingSecret is set
-      # https://thanos.io/tip/components/rule.md/#query-api
-      secret: {}
-        # - http_config:
-        #     basic_auth:
-        #       username: some_user
-        #       password: some_pass
-        #   static_configs:
-        #     - URL
-        #   scheme: http
-        #   timeout: 10s
-
-    ## Labels configure the external label pairs to ThanosRuler. A default replica
-    ## label `thanos_ruler_replica` will be always added as a label with the value
-    ## of the pod's name and it will be dropped in the alerts.
-    labels: {}
-
-    ## If set to true all actions on the underlying managed objects are not going to be performed, except for delete actions.
-    ##
-    paused: false
-
-    ## Allows setting additional arguments for the ThanosRuler container
-    ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#thanosruler
-    ##
-    additionalArgs: []
-      # - name: remote-write.config
-      #   value: |-
-      #     "remote_write":
-      #     - "name": "receiver-0"
-      #       "remote_timeout": "30s"
-      #       "url": "http://thanos-receiver-0.thanos-receiver:8081/api/v1/receive"
-
-    ## Define which Nodes the Pods are scheduled on.
-    ## ref: https://kubernetes.io/docs/user-guide/node-selection/
-    ##
-    nodeSelector: {}
-
-    ## Define resources requests and limits for single Pods.
-    ## ref: https://kubernetes.io/docs/user-guide/compute-resources/
-    ##
-    resources: {}
-    # requests:
-    #   memory: 400Mi
-
-    ## Pod anti-affinity can prevent the scheduler from placing Prometheus replicas on the same node.
-    ## The default value "soft" means that the scheduler should *prefer* to not schedule two replica pods onto the same node but no guarantee is provided.
-    ## The value "hard" means that the scheduler is *required* to not schedule two replica pods onto the same node.
-    ## The value "" will disable pod anti-affinity so that no anti-affinity rules will be configured.
-    ##
-    podAntiAffinity: ""
-
-    ## If anti-affinity is enabled sets the topologyKey to use for anti-affinity.
-    ## This can be changed to, for example, failure-domain.beta.kubernetes.io/zone
-    ##
-    podAntiAffinityTopologyKey: kubernetes.io/hostname
-
-    ## Assign custom affinity rules to the thanosRuler instance
-    ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
-    ##
-    affinity: {}
-    # nodeAffinity:
-    #   requiredDuringSchedulingIgnoredDuringExecution:
-    #     nodeSelectorTerms:
-    #     - matchExpressions:
-    #       - key: kubernetes.io/e2e-az-name
-    #         operator: In
-    #         values:
-    #         - e2e-az1
-    #         - e2e-az2
-
-    ## If specified, the pod's tolerations.
-    ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
-    ##
-    tolerations: []
-    # - key: "key"
-    #   operator: "Equal"
-    #   value: "value"
-    #   effect: "NoSchedule"
-
-    ## If specified, the pod's topology spread constraints.
-    ## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
-    ##
-    topologySpreadConstraints: []
-    # - maxSkew: 1
-    #   topologyKey: topology.kubernetes.io/zone
-    #   whenUnsatisfiable: DoNotSchedule
-    #   labelSelector:
-    #     matchLabels:
-    #       app: thanos-ruler
-
-    ## SecurityContext holds pod-level security attributes and common container settings.
-    ## This defaults to non root user with uid 1000 and gid 2000. *v1.PodSecurityContext  false
-    ## ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
-    ##
-    securityContext:
-      runAsGroup: 2000
-      runAsNonRoot: true
-      runAsUser: 1000
-      fsGroup: 2000
-      seccompProfile:
-        type: RuntimeDefault
-
-    ## ListenLocal makes the ThanosRuler server listen on loopback, so that it does not bind against the Pod IP.
-    ## Note this is only for the ThanosRuler UI, not the gossip communication.
-    ##
-    listenLocal: false
-
-    ## Containers allows injecting additional containers. This is meant to allow adding an authentication proxy to an ThanosRuler pod.
-    ##
-    containers: []
-
-    # Additional volumes on the output StatefulSet definition.
-    volumes: []
-
-    # Additional VolumeMounts on the output StatefulSet definition.
-    volumeMounts: []
-
-    ## InitContainers allows injecting additional initContainers. This is meant to allow doing some changes
-    ## (permissions, dir tree) on mounted volumes before starting prometheus
-    initContainers: []
-
-    ## Priority class assigned to the Pods
-    ##
-    priorityClassName: ""
-
-    ## PortName to use for ThanosRuler.
-    ##
-    portName: "web"
-
-    ## Additional configuration which is not covered by the properties above. (passed through tpl)
-    additionalConfig: {}
-
-    ## Additional configuration which is not covered by the properties above.
-    ## Useful, if you need advanced templating
-    additionalConfigString: ""
-
-  ## ExtraSecret can be used to store various data in an extra secret
-  ## (use it for example to store hashed basic auth credentials)
-  extraSecret:
-    ## if not set, name will be auto generated
-    # name: ""
-    annotations: {}
-    data: {}
-  #   auth: |
-  #     foo:$apr1$OFG3Xybp$ckL0FHDAkoXYIlH9.cysT0
-  #     someoneelse:$apr1$DMZX2Z4q$6SbQIfyuLQd.xmo/P0m2c.
-
-## Setting to true produces cleaner resource names, but requires a data migration because the name of the persistent volume changes. Therefore this should only be set once on initial installation.
-##
-cleanPrometheusOperatorObjectNames: false
-
-## Extra manifests to deploy as an array
-extraManifests: []
-  # - apiVersion: v1
-  #   kind: ConfigMap
-  #   metadata:
-  #   labels:
-  #     name: prometheus-extra
-  #   data:
-  #     extra-data: "value"
