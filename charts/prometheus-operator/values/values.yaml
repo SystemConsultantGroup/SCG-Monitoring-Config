@@ -3195,12 +3195,12 @@ prometheus:
     - job_name: 'mysql-exporter'
       scheme: http
       metrics_path: /metrics
-      static-configs:
+      static_configs:
         - targets: ["115.145.172.221:9104"]
     - job_name: 'scg-apply-exporter'
       scheme: https
       metrics_path: /v1/metrics
-      static-configs:
+      static_configs:
         - targets: ["apply.scg.skku.ac.kr"]
     ## If additional scrape configurations are already deployed in a single secret file you can use this section.
     ## Expected values are the secret name and key
