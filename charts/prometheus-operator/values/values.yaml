@@ -435,7 +435,7 @@ grafana:
     path: /
     ## Secret must be manually created in the namespace
     tls: 
-    - secretName: grafana-general-tls
+    - secretName: grafana-tls-secret
       hosts:
       - grafana.k8s.scg.skku.ac.kr
   # # To make Grafana persistent (Using Statefulset)
@@ -2626,7 +2626,7 @@ prometheus:
 
     ## For Kubernetes >= 1.18 you should specify the pathType (determines how Ingress paths should be matched)
     ## See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#better-path-matching-with-path-types
-    pathType: prefix
+    pathType: Prefix
 
     ## TLS configuration for Prometheus Ingress
     ## Secret must be manually created in the namespace
