@@ -4,6 +4,7 @@ metadata:
   name: prometheus-stack  
   namespace: monitoring
 spec:
+  project: default
   sources:
   - repoURL: 'https://prometheus-community.github.io/helm-charts'
     chart: kube-prometheus-stack
@@ -14,3 +15,10 @@ spec:
   - repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
     targetRevision: main
     ref: values
+  destination: 
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfheal: true
