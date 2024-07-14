@@ -1,0 +1,13 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+spec:
+  sources:
+  - repoURL: 'https://prometheus-community.github.io/helm-charts'
+    chart: kube-prometheus-stack
+    targetRevision: 61.3.1
+    helm:
+      valueFiles:
+      - $values/charts/prometheus-operator/values/values.yaml
+  - repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
+    targetRevision: main
+    ref: values
