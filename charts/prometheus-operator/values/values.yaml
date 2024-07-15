@@ -483,7 +483,7 @@ grafana:
 
       ## URL of prometheus datasource
       ##
-      url: http://prometheus-stack-prometheus:9090/
+      url: http://prometheus-stack-kube-prom-prometheus:9090/
 
       ## Prometheus request timeout in seconds
       # timeout: 30
