@@ -91,20 +91,21 @@ alertmanager:
 
   config:
     global:
-      resolve_timeout: 5m
+      resolve_timeout: 5m 
       slack_api_url: https://hooks.slack.com/services/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
-    
-  #   route:
-  #     receiver: 'scg'
-  #     group_by: ['alertname']
-  #     group_wait: 30s
-  #     group_interval: 5m
-  #     repeat_interval: 3h
-  #     routes:
-  #     - receiver: 'scg'
-  #       group_wait: 10s
+    route:
+      # receiver: 'slack'
+      group_by: ['job']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 3h
+      routes:
+      - match:
+        receiver: 'slack'
+        continue: true
     receivers:
-      - name: 'scg'
+      - name: 'null'
+      - name: 'slack'
         slack_configs:
           - channel: '#grafana'
             text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
