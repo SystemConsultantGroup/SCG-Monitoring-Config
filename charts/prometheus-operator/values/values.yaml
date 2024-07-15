@@ -6,14 +6,21 @@ defaultRules:
   disabled: true  ## {}
   # KubeAPIDown: true
   # NodeRAIDDegraded: true
-
+additionalPrometheusRulesMap: 
+ rule-name:
+   groups:
+   - name: node-exporter-alerts
+     rules:
+     - record: my_record
+       expr: up == 0
+       for: 1m
+       labels:
+        severity: warning
+       annotations:
+          title: Node {{ $labels.instance }} is down
+          description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than 1 minute. Node seems down.
 alertmanager:
-
-  ## Deploy alertmanager
-  ##
   enabled: true
-
-
   service:
     annotations: {}
     labels: {}
@@ -35,25 +42,6 @@ alertmanager:
     nodePort: 30903
     ## List of IP addresses at which the Prometheus server service is available
     ## Ref: https://kubernetes.io/docs/user-guide/services/#external-ips
-    ##
-
-    ## Additional ports to open for Alertmanager service
-    ##
-    additionalPorts: []
-    # - name: oauth-proxy
-    #   port: 8081
-    #   targetPort: 8081
-    # - name: oauth-metrics
-    #   port: 8082
-    #   targetPort: 8082
-
-    externalIPs: []
-    loadBalancerIP: ""
-    loadBalancerSourceRanges: []
-
-    ## Denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
-    ##
-    externalTrafficPolicy: Cluster
 
     ## If you want to make sure that connections from a particular client are passed to the same Pod each time
     ## Accepts 'ClientIP' or 'None'
@@ -101,8 +89,25 @@ alertmanager:
     ##
     type: ClusterIP
 
-
-
+  config:
+    global:
+      resolve_timeout: 5m
+      slack_api_url: https://hooks.slack.com/services/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
+    
+    route:
+      receiver: 'scg'
+      group_by: ['alertname']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 3h
+      routes:
+      - receiver: 'scg'
+        group_wait: 10s
+    receivers:
+      - name: 'scg'
+    slack_configs:
+    - channel: '#grafana'
+      text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
   alertmanagerSpec:
     ## Standard object's metadata. More info: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
     ## Metadata Labels and Annotations gets propagated to the Alertmanager pods.
