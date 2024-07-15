@@ -93,13 +93,14 @@ alertmanager:
     global:
       resolve_timeout: 5m  
       slack_api_url: https://hooks.slack.com/services/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
-    route: {}
-      # receiver: 'slack'
-      # group_by: [alertname, app]
-        # routes:
-        # - match:
-        #   receiver: 'slack'
-        #   continue: true
+    route: 
+      receiver: 'slack'
+      group_by: [alertname, app]
+      routes:
+        - matchers: 
+            - alertname = "Watchdog"
+          receiver: 'slack'
+          continue: true
     inhibit_rules: {}
     receivers:
       - name: 'slack'
