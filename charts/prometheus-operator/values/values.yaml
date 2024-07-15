@@ -3203,10 +3203,11 @@ prometheus:
       static_configs:
         - targets: ["115.145.172.221:9104"]
     - job_name: 'scg-apply-exporter'
-      scheme: https
+      scheme: http
       metrics_path: /v1/metrics
       static_configs:
-        - targets: ["apply.scg.skku.ac.kr"]
+        # - targets: ["apply.scg.skku.ac.kr"]
+        - targets: ["prod-be-service.scg-apply-prod.svc.cluster.local"]
     ## If additional scrape configurations are already deployed in a single secret file you can use this section.
     ## Expected values are the secret name and key
     ## Cannot be used with additionalScrapeConfigs
