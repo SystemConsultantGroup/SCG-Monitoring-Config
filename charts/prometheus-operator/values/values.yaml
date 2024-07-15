@@ -11,11 +11,11 @@ additionalPrometheusRulesMap:
    groups:
    - name: node-exporter-alerts
      rules:
-     - record: my_record
+     - alert: Node-Down
        expr: up == 0
        for: 1m
        labels:
-        severity: warning
+        severity: critical
        annotations:
           title: Node {{ $labels.instance }} is down
           description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than 1 minute. Node seems down.
@@ -89,25 +89,25 @@ alertmanager:
     ##
     type: ClusterIP
 
-  config:
-    global:
-      resolve_timeout: 5m
-      slack_api_url: https://hooks.slack.com/services/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
+  # config:
+  #   global:
+  #     resolve_timeout: 5m
+  #     slack_api_url: https://hooks.slack.com/services/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
     
-    route:
-      receiver: 'scg'
-      group_by: ['alertname']
-      group_wait: 30s
-      group_interval: 5m
-      repeat_interval: 3h
-      routes:
-      - receiver: 'scg'
-        group_wait: 10s
-    receivers:
-      - name: 'scg'
-    slack_configs:
-    - channel: '#grafana'
-      text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
+  #   route:
+  #     receiver: 'scg'
+  #     group_by: ['alertname']
+  #     group_wait: 30s
+  #     group_interval: 5m
+  #     repeat_interval: 3h
+  #     routes:
+  #     - receiver: 'scg'
+  #       group_wait: 10s
+  #   receivers:
+  #     - name: 'scg'
+  #   slack_configs:
+  #   - channel: '#grafana'
+  #     text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
   alertmanagerSpec:
     ## Standard object's metadata. More info: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
     ## Metadata Labels and Annotations gets propagated to the Alertmanager pods.
