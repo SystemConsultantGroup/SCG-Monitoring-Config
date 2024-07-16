@@ -92,7 +92,6 @@ alertmanager:
   config:
     global:
       resolve_timeout: 5m  
-      slack_api_url: "{{ vault \"path:kv/data/slack-secret#url\" }}"
       ##수정 필요
     route: 
       receiver: 'slack'
@@ -107,6 +106,7 @@ alertmanager:
       - name: 'slack'
         slack_configs:
           - channel: '#grafana'
+            api_url_file: /etc/secrets/slack-api-url
             text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
   alertmanagerSpec:
     ## Standard object's metadata. More info: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
@@ -125,12 +125,12 @@ alertmanager:
     ## If true then the user will be responsible to provide a secret with alertmanager configuration
     ## So when true the config part will be ignored (including templateFiles) and the one in the secret will be used
     ##
-    useExistingSecret: false
+    useExistingSecret: true
 
     ## Secrets is a list of Secrets in the same namespace as the Alertmanager object, which shall be mounted into the
     ## Alertmanager Pods. The Secrets are mounted into /etc/alertmanager/secrets/.
     ##
-    secrets: []
+    secrets: [alertmanager-secret]
 
     ## If false then the user will opt out of automounting API credentials.
     ##
