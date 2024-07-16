@@ -11,7 +11,7 @@ spec:
     targetRevision: 61.3.1
     helm:
       valueFiles:
-      - $values/charts/prometheus-operator/values/values.yaml
+      - $values/charts/prometheus-operator/values/sealed-secrets.yaml
   - repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
     targetRevision: main
     plugin:
