@@ -92,7 +92,7 @@ alertmanager:
   config:
     global:
       resolve_timeout: 5m  
-      slack_api_url: {{<path:kv/data/slack-secret#url>}}
+      slack_api_url: {{ vault "path:kv/data/slack-secret#url" }}
       ##수정 필요
     route: 
       receiver: 'slack'
