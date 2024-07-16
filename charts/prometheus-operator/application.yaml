@@ -14,6 +14,8 @@ spec:
       - $values/charts/prometheus-operator/values/values.yaml
   - repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
     targetRevision: main
+    plugin:
+      name: argocd-vault-plugin
     ref: values
   destination: 
     server: https://kubernetes.default.svc

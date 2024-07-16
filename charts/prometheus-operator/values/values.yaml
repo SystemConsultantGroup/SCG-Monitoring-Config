@@ -6,14 +6,21 @@ defaultRules:
   disabled: true  ## {}
   # KubeAPIDown: true
   # NodeRAIDDegraded: true
-
+additionalPrometheusRulesMap: 
+ rule-name:
+   groups:
+   - name: node-exporter-alerts
+     rules:
+     - alert: Node-Down
+       expr: up == 0
+       for: 1m
+       labels:
+        severity: critical
+       annotations:
+          title: Node {{ $labels.instance }} is down
+          description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than 1 minute. Node seems down.
 alertmanager:
-
-  ## Deploy alertmanager
-  ##
   enabled: true
-
-
   service:
     annotations: {}
     labels: {}
@@ -35,25 +42,6 @@ alertmanager:
     nodePort: 30903
     ## List of IP addresses at which the Prometheus server service is available
     ## Ref: https://kubernetes.io/docs/user-guide/services/#external-ips
-    ##
-
-    ## Additional ports to open for Alertmanager service
-    ##
-    additionalPorts: []
-    # - name: oauth-proxy
-    #   port: 8081
-    #   targetPort: 8081
-    # - name: oauth-metrics
-    #   port: 8082
-    #   targetPort: 8082
-
-    externalIPs: []
-    loadBalancerIP: ""
-    loadBalancerSourceRanges: []
-
-    ## Denotes if this Service desires to route external traffic to node-local or cluster-wide endpoints
-    ##
-    externalTrafficPolicy: Cluster
 
     ## If you want to make sure that connections from a particular client are passed to the same Pod each time
     ## Accepts 'ClientIP' or 'None'
@@ -101,8 +89,25 @@ alertmanager:
     ##
     type: ClusterIP
 
-
-
+  config:
+    global:
+      resolve_timeout: 5m  
+      slack_api_url: "{{ vault \"path:kv/data/slack-secret#url\" }}"
+      ##수정 필요
+    route: 
+      receiver: 'slack'
+      group_by: [alertname, app]
+      routes:
+        - matchers: 
+            - alertname = "Watchdog"
+          receiver: 'slack'
+          continue: true
+    inhibit_rules: {}
+    receivers:
+      - name: 'slack'
+        slack_configs:
+          - channel: '#grafana'
+            text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
   alertmanagerSpec:
     ## Standard object's metadata. More info: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
     ## Metadata Labels and Annotations gets propagated to the Alertmanager pods.
@@ -217,13 +222,15 @@ alertmanager:
     ##
     storage:   ## pv 추가
       volumeClaimTemplate:
+        metadata:
+          name: alertmanager-pvc  
         spec:
           storageClassName: longhorn
           accessModes: ["ReadWriteOnce"]
           resources:
             requests:
-              storage: 10Gi
-          selector: {}
+              storage: 20Gi
+          
 
 
     ## The external URL the Alertmanager instances will be available under. This is necessary to generate correct URLs. This is necessary if Alertmanager is not served from root of a DNS name. string  false
@@ -435,7 +442,7 @@ grafana:
     path: /
     ## Secret must be manually created in the namespace
     tls: 
-    - secretName: grafana-general-tls
+    - secretName: grafana-tls-secret
       hosts:
       - grafana.k8s.scg.skku.ac.kr
   # # To make Grafana persistent (Using Statefulset)
@@ -481,13 +488,13 @@ grafana:
 
       ## URL of prometheus datasource
       ##
-      url: http://prometheus-stack-prometheus:9090/
+      url: http://prometheus-stack-kube-prom-prometheus:9090/
 
       ## Prometheus request timeout in seconds
       # timeout: 30
 
       # If not defined, will use prometheus.prometheusSpec.scrapeInterval or its default
-      # defaultDatasourceScrapeInterval: 15s
+      defaultDatasourceScrapeInterval: 15s
 
       ## Annotations for Grafana datasource configmaps
       ##
@@ -2611,8 +2618,11 @@ prometheus:
 
   ingress:
     enabled: true
-
-    annotations: {}
+    ingressClassName: nginx
+    annotations: 
+      kubernetes.io/ingress.class: nginx
+      kubernetes.io/tls-acme: "true"
+      cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
     labels: {}
 
     ## Redirect ingress to an additional defined port on the service
@@ -2626,7 +2636,7 @@ prometheus:
 
     ## For Kubernetes >= 1.18 you should specify the pathType (determines how Ingress paths should be matched)
     ## See https://kubernetes.io/blog/2020/04/02/improvements-to-the-ingress-api-in-kubernetes-1.18/#better-path-matching-with-path-types
-    pathType: prefix
+    pathType: Prefix
 
     ## TLS configuration for Prometheus Ingress
     ## Secret must be manually created in the namespace
@@ -2784,7 +2794,7 @@ prometheus:
     ## Defaults to 30s.
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/release-0.44/pkg/prometheus/promcfg.go#L180-L183
     ##
-    scrapeInterval: ""
+    scrapeInterval: "15s"
 
     ## Number of seconds to wait for target to respond before erroring
     ##
@@ -2802,7 +2812,7 @@ prometheus:
 
     ## Interval between consecutive evaluations.
     ##
-    evaluationInterval: ""
+    evaluationInterval: "15s"
 
     ## ListenLocal makes the Prometheus server listen on loopback, so that it does not bind against the Pod IP.
     ##
@@ -3195,13 +3205,14 @@ prometheus:
     - job_name: 'mysql-exporter'
       scheme: http
       metrics_path: /metrics
-      static-configs:
+      static_configs:
         - targets: ["115.145.172.221:9104"]
     - job_name: 'scg-apply-exporter'
-      scheme: https
+      scheme: http
       metrics_path: /v1/metrics
-      static-configs:
-        - targets: ["apply.scg.skku.ac.kr"]
+      static_configs:
+        # - targets: ["apply.scg.skku.ac.kr"]
+        - targets: ["prod-be-service.scg-apply-prod.svc.cluster.local"]
     ## If additional scrape configurations are already deployed in a single secret file you can use this section.
     ## Expected values are the secret name and key
     ## Cannot be used with additionalScrapeConfigs
