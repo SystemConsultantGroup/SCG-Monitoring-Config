@@ -3202,6 +3202,11 @@ prometheus:
     ## port to 2379 and allow etcd scraping provided it is running on all Kubernetes master nodes
     ##
     additionalScrapeConfigs: 
+    - job_name: 'mysql-node-exporter'
+      scheme: http
+      metrics_path: /metrics
+      static_configs:
+        - targets: ["115.145.172.221:9100"]
     - job_name: 'mysql-exporter'
       scheme: http
       metrics_path: /metrics
