@@ -15,7 +15,13 @@ spec:
   - repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
     targetRevision: main
     plugin:
-      name: argocd-vault-plugin
+      env:
+        - name: HELM_VALUES 
+          value: |
+            alertmanager:
+              config:
+                global:
+                  slack_api_url: <path:kv/data/slack-secret#url> 
     ref: values
   destination: 
     server: https://kubernetes.default.svc
