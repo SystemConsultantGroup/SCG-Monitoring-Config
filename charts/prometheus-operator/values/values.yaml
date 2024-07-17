@@ -21,6 +21,27 @@ additionalPrometheusRulesMap:
           description: Failed to scrape {{ $labels.job }} on {{ $labels.instance }} for more than 1 minute. Node seems down.
 alertmanager:
   enabled: true
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+
+    annotations: 
+      kubernetes.io/ingress.class: nginx
+      kubernetes.io/tls-acme: "true"
+      cert-manager.io/cluster-issuer: letsencrypt-clusterissuer
+
+    labels: {}
+    hosts: 
+      - alert.k8s.scg.skku.ac.kr
+
+    paths:
+      - /
+    tls:
+      - secretName: alertmanager-tls-secret
+        hosts:
+          - alert.k8s.scg.skku.ac.kr
+    
   service:
     annotations: {}
     labels: {}
