@@ -113,6 +113,7 @@ alertmanager:
   config:
     global:
       resolve_timeout: 5m  
+      slack_api_url: '<path:kv/data/slack-secret#url>'
       ##수정 필요
     route: 
       receiver: 'slack'
@@ -127,7 +128,7 @@ alertmanager:
       - name: 'slack'
         slack_configs:
           - channel: '#grafana'
-            api_url_file: /etc/secrets/alertmanager-secret/slack-api-url
+            # api_url_file: /etc/secrets/alertmanager-secret/slack-api-url
             text: "summary: {{ .CommonAnnotations.summary }}\ndescription: {{ .CommonAnnotations.description }}"
   alertmanagerSpec:
     ## Standard object's metadata. More info: https://github.com/kubernetes/community/blob/master/contributors/devel/sig-architecture/api-conventions.md#metadata
@@ -151,7 +152,8 @@ alertmanager:
     ## Secrets is a list of Secrets in the same namespace as the Alertmanager object, which shall be mounted into the
     ## Alertmanager Pods. The Secrets are mounted into /etc/alertmanager/secrets/.
     ##
-    secrets: [alertmanager-secret]
+    secrets: []
+    # secrets: [alertmanager-secret]
 
     ## If false then the user will opt out of automounting API credentials.
     ##
@@ -165,7 +167,8 @@ alertmanager:
     ## ConfigSecret is the name of a Kubernetes Secret in the same namespace as the Alertmanager object, which contains configuration for
     ## this Alertmanager instance. Defaults to 'alertmanager-' The secret is mounted into /etc/alertmanager/config.
     ##
-    configSecret: "alertmanager-config"
+    configSecret: ""
+    # configSecret: "alertmanager-config"
 
     ## WebTLSConfig defines the TLS parameters for HTTPS
     ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#alertmanagerwebspec
