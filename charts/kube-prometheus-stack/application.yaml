@@ -9,9 +9,6 @@ spec:
     repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
     path: charts/kube-prometheus-stack
     targetRevision: HEAD
-    helm:
-      valueFiles:
-      - values.yaml
     plugin:
       name: argocd-vault-plugin-helm
       env:
