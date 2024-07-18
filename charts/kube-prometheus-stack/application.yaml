@@ -5,8 +5,8 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  sources:
-  - repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
+  source:
+    repoURL: 'https://github.com/SystemConsultantGroup/SCG-Monitoring-Config.git'
     path: charts/kube-prometheus-stack
     targetRevision: HEAD
     helm:
